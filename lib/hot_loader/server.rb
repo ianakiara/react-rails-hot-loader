@@ -67,13 +67,19 @@ module React
           ws_url =  "ws://#{host}:#{port}"
           React::Rails::HotLoader.log("starting WS server (#{ws_url})")
 
-          EM::WebSocket.run(host: host, port: port) do |ws|
-            ws.onopen     { React::Rails::HotLoader.log("opened a connection (#{ws_url})") }
-            ws.onmessage  { |msg| handle_message(ws, msg) }
-            ws.onclose    { React::Rails::HotLoader.log("closed a connection (#{ws_url})") }
-          end
+          begin
+            EM::WebSocket.run(host: host, port: port) do |ws|
+              ws.onopen     { React::Rails::HotLoader.log("opened a connection (#{ws_url})") }
+              ws.onmessage  { |msg| handle_message(ws, msg) }
+              ws.onclose    { React::Rails::HotLoader.log("closed a connection (#{ws_url})") }
+            end
 
-          React::Rails::HotLoader.log("started WS server (#{ws_url})")
+            React::Rails::HotLoader.log("started WS server (#{ws_url})")
+          rescue StandardError => err
+            if err.message =~ /no acceptor/
+              React::Rails::HotLoader.log("WS server is already running (#{ws_url})")
+            end
+          end
 
         end
 
